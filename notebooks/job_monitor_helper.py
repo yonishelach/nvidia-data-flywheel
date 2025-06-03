@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
+import requests
 from datetime import datetime
 from IPython.display import clear_output
 
@@ -32,13 +33,13 @@ def create_results_table(job_data):
             }
             
             if "function_name" in all_scores:
-                row["Function Name Accuracy"] = all_scores["function_name"]
+                row["Function name accuracy"] = all_scores["function_name"]
             
             if "function_name_and_args_accuracy" in all_scores:
-                row["Function + Args Accuracy"] = all_scores["function_name_and_args_accuracy"]
+                row["Function name + args accuracy (exact-match)"] = all_scores["function_name_and_args_accuracy"]
                 
             if "tool_calling_correctness" in all_scores:
-                row["Tool Calling Correctness (LLM-Judge)"] = all_scores["tool_calling_correctness"]
+                row["Function name + args accuracy (LLM-judge)"] = all_scores["tool_calling_correctness"]
             
             # Add any other scores with formatted names
             for score_name, score_value in all_scores.items():
@@ -76,7 +77,13 @@ def create_customization_table(job_data):
     customizations = pd.DataFrame(customizations)
     return customizations.sort_values(["Model"])
 
-def monitor_job(job_id):
+def get_job_status(api_base_url, job_id):
+    """Get the current status of a job."""
+    response = requests.get(f"{api_base_url}/api/jobs/{job_id}")
+    response.raise_for_status()
+    return response.json()
+
+def monitor_job(api_base_url, job_id, poll_interval):
     """Monitor a job and display its progress in a table."""
     print(f"Monitoring job {job_id}...")
     print("Press Ctrl+C to stop monitoring")
@@ -84,9 +91,7 @@ def monitor_job(job_id):
     while True:
         try:
             clear_output(wait=True)
-
-            fig, ax = plt.subplots(figsize=(10, 6))
-            job_data = get_job_status(job_id)
+            job_data = get_job_status(api_base_url, job_id)
             results_df = create_results_table(job_data)
             customizations_df = create_customization_table(job_data)
             clear_output(wait=True)
@@ -100,20 +105,42 @@ def monitor_job(job_id):
             display(job_data)
 
             # Plot 1: Evaluation Scores
-            ax.set_title("Evalulation Results", fontsize=14)
             if not results_df.empty:
-                pivot_df = results_df.pivot(index="Model", columns="Eval Type", values="Tool Calling Correctness (LLM-Judge)").fillna(0)
-                pivot_df.plot(kind='bar', ax=ax)
-                ax.set_ylabel("Eval Metrics")
-                ax.set_ylim(0, 1)
-                ax.legend(title="Eval Type")
-                ax.grid(axis='y', linestyle='--', alpha=0.7)
+                metrics = [
+                    "Function name accuracy",
+                    "Function name + args accuracy (exact-match)",
+                    "Function name + args accuracy (LLM-judge)"
+                ]
+            
+                models = results_df["Model"].unique()
+            
+                for model in models:
+                    fig, ax = plt.subplots(figsize=(8, 5))
+                    model_df = results_df[results_df["Model"] == model]
+            
+                    # Reorganize into: rows = metrics, columns = Eval Types
+                    plot_df = model_df.set_index("Eval Type")[metrics].T
+            
+                    # Plot bar chart for this model
+                    plot_df.plot(kind="bar", ax=ax)
+                    ax.set_title(f"Evaluation results for {model}", fontsize=12)
+                    ax.set_ylabel("Score")
+                    ax.set_ylim(0, 1)
+                    ax.legend(title="Eval Type")
+                    ax.grid(axis='y', linestyle='--', alpha=0.7)
+                    plt.xticks(rotation=30)
+                    plt.tight_layout()
+                    plt.show()
             else:
+                fig, ax = plt.subplots(figsize=(6, 4))
                 ax.text(0.5, 0.5, "No Evaluation Data", ha='center', va='center')
+                ax.set_axis_off()
+                plt.tight_layout()
+                plt.show()
 
             plt.tight_layout()
             plt.show()                        
-            time.sleep(POLL_INTERVAL)
+            time.sleep(poll_interval)
 
             # Check if job is completed or failed
             if job_data['status'] in ['completed', 'failed']:
