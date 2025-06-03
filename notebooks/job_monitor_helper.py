@@ -117,8 +117,8 @@ def monitor_job(api_base_url, job_id, poll_interval):
                 for model in models:
                     fig, ax = plt.subplots(figsize=(8, 5))
                     model_df = results_df[results_df["Model"] == model]
-            
-                    # Reorganize into: rows = metrics, columns = Eval Types
+                    if not all(metric in model_df.columns for metric in metrics):
+                        continue  # skip this model for now                 
                     plot_df = model_df.set_index("Eval Type")[metrics].T
             
                     # Plot bar chart for this model
