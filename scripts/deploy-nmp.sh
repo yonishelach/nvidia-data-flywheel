@@ -39,11 +39,10 @@ maybe_sudo() {
 }
 
 # === Dependency Installation ===
-# Install a dependency if it's missing - optimized for Linux
 install_dependency() {
   local tool=$1
 
-  log "Installing $tool using verified methods..."
+  log "Installing $tool"
 
   case "$tool" in
     minikube)
@@ -441,6 +440,8 @@ customizer:
   customizerConfig:
     models:
       meta/llama-3.2-1b-instruct:
+        enabled: true
+      meta/llama-3.2-3b-instruct:
         enabled: true
       meta/llama-3.1-8b-instruct:
         enabled: true
