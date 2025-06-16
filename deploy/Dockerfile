@@ -34,7 +34,7 @@ RUN sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list && \
     rm -f xz-utils*
 
 WORKDIR /legal/source
-COPY LICENSE-3rd-party.txt /legal/
+COPY NVIDIA-LICENSE-3rd-party.txt /legal/
 
 # Install uv
 RUN pip install uv
