@@ -381,7 +381,7 @@ start_minikube() {
     --cpus=no-limit \
     --memory=no-limit \
     --gpus=all \
-    --insecure-registry="registry.kube-system.svc.cluster.local:5000" \
+    --insecure-registry="$(minikube ip):5000" \
     $extra_args
 
   log "Enabling ingress addon..."
