@@ -1,6 +1,6 @@
 DOCKER_SERVER="${DOCKER_SERVER:-}"
-DOCKER_USERNAME="${DOCKER_USERNAME:-}"
-DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
+DOCKER_USERNAME="${DOCKER_USERNAME:- }"
+DOCKER_PASSWORD="${DOCKER_PASSWORD:- }"
 DOCKER_REGISTRY_URL="${DOCKER_REGISTRY_URL:-}"
 MLRUN_NAMESPACE="mlrun"
 # Set up a local docker registry on the minikube cluster only if docker registry is not provided:
@@ -64,21 +64,10 @@ helm --namespace $MLRUN_NAMESPACE install mlrun-ce --wait --timeout 960s \
 if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 0 ]; then
   # log in to Docker registry if not using local registry:
   echo "$DOCKER_PASSWORD" | docker login "$DOCKER_SERVER" -u "$DOCKER_USERNAME" --password-stdin
-else
-  # Configure Docker to use the insecure registry if using local registry:
-  MINIKUBE_IP=$(minikube ip)
-  echo "Configuring Docker for insecure registry at $MINIKUBE_IP..."
-    sudo jq --arg reg "$MINIKUBE_IP" \
-  '(.["insecure-registries"] // []) + [$reg:5000]
-   | { "insecure-registries": . }' \
-  /etc/docker/daemon.json 2>/dev/null \
-  | sudo tee /etc/docker/daemon.tmp.json >/dev/null && \
-  sudo mv /etc/docker/daemon.tmp.json /etc/docker/daemon.json && \
-  sudo systemctl restart docker
-  echo "Docker configured and restarted successfully."
 fi
 
 # Build and push mlrun-data-flywheel image:
+eval "$(minikube docker-env)"
 docker build -t "$DOCKER_SERVER"/mlrun-data-flywheel:latest -f deploy/mlrun/Dockerfile .
 docker push "$DOCKER_SERVER"/mlrun-data-flywheel:latest
 
