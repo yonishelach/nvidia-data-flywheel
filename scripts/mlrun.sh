@@ -3,7 +3,12 @@ DOCKER_USERNAME="${DOCKER_USERNAME:-}"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
 DOCKER_REGISTRY_URL="${DOCKER_REGISTRY_URL:-}"
 MLRUN_NAMESPACE="mlrun"
-
+# Set up a local docker registry on the minikube cluster only if docker registry is not provided:
+if [ -z "$DOCKER_REGISTRY_URL" ]; then
+  LOCAL_DOCKER_REGISTRY_FLAG=1
+else
+  LOCAL_DOCKER_REGISTRY_FLAG=0
+fi
 # Remove argo workflows CRDs and patch nemo's workflow controller to use namespaced mode.
 # This is done to avoid running kfp workflows by nemo's workflow controller.
 kubectl get crds | grep 'argoproj.io' | awk '{print $1}' | xargs kubectl delete crd
@@ -20,10 +25,9 @@ helm repo add mlrun-ce https://mlrun.github.io/ce
 helm repo update
 
 # Set up a local docker registry on the minikube cluster only if docker registry is not provided:
-if [ -z "$DOCKER_REGISTRY_URL" ]; then
+if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 1 ]; then
   echo "No docker registry URL provided, setting up a local docker registry on the minikube cluster..."
   minikube addons enable registry
-#  minikube addons enable registry-creds
   DOCKER_REGISTRY_URL="http://$(minikube ip):5000"
   DOCKER_SERVER="$(minikube ip):5000"
 
@@ -40,15 +44,15 @@ kubectl create configmap registry-config \
   --from-literal=insecure_pull_registry_mode=enabled \
   --from-literal=insecure_push_registry_mode=enabled
 
-# Create docker registry secrets:
+# Create docker registry secrets: FAILED
 kubectl --namespace $MLRUN_NAMESPACE create secret docker-registry registry-credentials \
-    --docker-server $DOCKER_SERVER \
-    --docker-username $DOCKER_USERNAME \
-    --docker-password=$DOCKER_PASSWORD
+    --docker-server "$DOCKER_SERVER" \
+    --docker-username "$DOCKER_USERNAME" \
+    --docker-password="$DOCKER_PASSWORD"
 
 # Install mlrun ce:
 helm --namespace $MLRUN_NAMESPACE install mlrun-ce --wait --timeout 960s \
-  --set global.registry.url=$DOCKER_REGISTRY_URL \
+  --set global.registry.url="$DOCKER_REGISTRY_URL" \
   --set global.registry.secretName=registry-credentials \
   --set mlrun.api.image.tag=1.9.0-rc8 \
   --set mlrun.ui.image.tag=1.9.0-rc8 \
@@ -57,12 +61,26 @@ helm --namespace $MLRUN_NAMESPACE install mlrun-ce --wait --timeout 960s \
   --set nuclio.dashboard.externalIPAddresses=$(minikube ip) \
   mlrun-ce/mlrun-ce --version 0.7.3
 
-# Build and push mlrun-data-flywheel image:
-# log in to Docker registry:
-echo $DOCKER_PASSWORD | docker login $DOCKER_SERVER -u $DOCKER_USERNAME --password-stdin
+if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 0 ]; then
+  # log in to Docker registry if not using local registry:
+  echo "$DOCKER_PASSWORD" | docker login "$DOCKER_SERVER" -u "$DOCKER_USERNAME" --password-stdin
+else
+  # Configure Docker to use the insecure registry if using local registry:
+  MINIKUBE_IP=$(minikube ip)
+  echo "Configuring Docker for insecure registry at $MINIKUBE_IP..."
+    sudo jq --arg reg "$MINIKUBE_IP" \
+  '(.["insecure-registries"] // []) + [$reg:5000]
+   | { "insecure-registries": . }' \
+  /etc/docker/daemon.json 2>/dev/null \
+  | sudo tee /etc/docker/daemon.tmp.json >/dev/null && \
+  sudo mv /etc/docker/daemon.tmp.json /etc/docker/daemon.json && \
+  sudo systemctl restart docker
+  echo "Docker configured and restarted successfully."
+fi
 
-docker build -t $DOCKER_REGISTRY_URL/mlrun-data-flywheel:latest -f deploy/mlrun/Dockerfile .
-docker push $DOCKER_REGISTRY_URL/mlrun-data-flywheel:latest
+# Build and push mlrun-data-flywheel image:
+docker build -t "$DOCKER_SERVER"/mlrun-data-flywheel:latest -f deploy/mlrun/Dockerfile .
+docker push "$DOCKER_SERVER"/mlrun-data-flywheel:latest
 
 # Port forward all essential services and afterwards expose them in the UI:
 kubectl port-forward --namespace $MLRUN_NAMESPACE service/mlrun-jupyter 30040:8888 --address=0.0.0.0 &
