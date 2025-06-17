@@ -381,7 +381,7 @@ start_minikube() {
     --cpus=no-limit \
     --memory=no-limit \
     --gpus=all \
-    --insecure-registry="$(minikube ip):5000" \
+    --insecure-registry="10.0.0.0/24" \
     $extra_args
 
   log "Enabling ingress addon..."
