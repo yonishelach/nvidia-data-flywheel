@@ -15,20 +15,23 @@
 import os
 import mlrun
 
+LOCAL_REGISTRY = "192.168.49.2:5000"
 
 def setup(
         project: mlrun.projects.MlrunProject,
 ) -> mlrun.projects.MlrunProject:
     ngc_api_key = os.getenv("NGC_API_KEY")
     source = project.get_param(key="source")
-    image = project.get_param(key="image")
+    registry = project.get_param(key="registry", default=LOCAL_REGISTRY)
+
+    # This is a workaround for not running the setup if the project is already set up.
+    # It happens when getting the project in the workflow.
     if not source:
         return project
 
     if source:
         project.set_source(source, pull_at_runtime=True)
-    if image:
-        project.set_default_image(image)
+    project.set_default_image(f"{registry}/nvidia-data-flywheel:latest")
     if ngc_api_key:
         project.set_secrets(secrets={'NGC_API_KEY': ngc_api_key})
 
