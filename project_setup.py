@@ -29,8 +29,7 @@ def setup(
     if not source:
         return project
 
-    if source:
-        project.set_source(source, pull_at_runtime=True)
+    project.set_source(source, pull_at_runtime=True)
     project.set_default_image(f"{registry}/nvidia-data-flywheel:latest")
     if ngc_api_key:
         project.set_secrets(secrets={'NGC_API_KEY': ngc_api_key})

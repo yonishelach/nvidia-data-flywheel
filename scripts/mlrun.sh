@@ -36,15 +36,14 @@ if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 1 ]; then
     echo "Waiting for local docker registry to be ready..."
     sleep 5
   done
+  # Create a configmap for local docker registry:
+  kubectl create configmap registry-config \
+    --namespace=$MLRUN_NAMESPACE \
+    --from-literal=insecure_pull_registry_mode=enabled \
+    --from-literal=insecure_push_registry_mode=enabled
 fi
 
-# Create a configmap for local docker registry:
-kubectl create configmap registry-config \
-  --namespace=$MLRUN_NAMESPACE \
-  --from-literal=insecure_pull_registry_mode=enabled \
-  --from-literal=insecure_push_registry_mode=enabled
-
-# Create docker registry secrets: FAILED
+# Create docker registry secrets:
 kubectl --namespace $MLRUN_NAMESPACE create secret docker-registry registry-credentials \
     --docker-server "$DOCKER_SERVER" \
     --docker-username "$DOCKER_USERNAME" \
