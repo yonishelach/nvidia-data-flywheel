@@ -375,7 +375,10 @@ start_minikube() {
     log "Running as root, adding --force flag to minikube command"
   fi
 
+  MINIKUBE_IP="192.168.49.2"
   minikube start \
+    --static-ip="$MINIKUBE_IP" \
+    --insecure-registry="$MINIKUBE_IP:5000" \
     --driver=docker \
     --container-runtime=docker \
     --cpus=no-limit \
