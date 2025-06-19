@@ -1,4 +1,4 @@
-from src.tasks.tasks import spin_up_nim as spin_up_task
+from src.tasks.tasks import init_worker, spin_up_nim as spin_up_task
 from src.api.models import TaskResult
 
 import mlrun
@@ -13,5 +13,6 @@ def spin_up_nim(context: mlrun.MLClientCtx, previous_result: dict, nim_config: d
 
     :return: Updated TaskResult with NIM configuration.
     """
+    init_worker()
     previous_result = TaskResult(**previous_result)
     return spin_up_task(previous_result=previous_result, nim_config=nim_config)

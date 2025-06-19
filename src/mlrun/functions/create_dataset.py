@@ -1,7 +1,7 @@
 import mlrun
 from datetime import datetime
 from src.api.models import DataSplitConfig, FlywheelRun, TaskResult
-from src.tasks.tasks import create_datasets
+from src.tasks.tasks import create_datasets, init_worker
 from src.lib.nemo.llm_as_judge import LLMAsJudge
 
 def create_dataset(
@@ -21,6 +21,7 @@ def create_dataset(
 
     :return: A JSON representation of the TaskResult containing the created datasets and other metadata.
     """
+    init_worker()
     llm_as_judge = LLMAsJudge()
     llm_as_judge_cfg = llm_as_judge.config
     split_config = DataSplitConfig(**data_split_config) if data_split_config else None
