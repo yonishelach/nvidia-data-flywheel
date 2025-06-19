@@ -12,4 +12,4 @@ def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> 
     :return: Updated TaskResult with LLM judge status.
     """
     previous_result = TaskResult(**previous_result)
-    return judge_task(previous_result)
+    return judge_task.run(previous_result)
