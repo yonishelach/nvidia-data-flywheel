@@ -1,9 +1,9 @@
 from src.api.models import TaskResult
-from src.tasks.tasks import wait_for_llm_as_judge
+from src.tasks.tasks import wait_for_llm_as_judge as judge_task
 
 import mlrun
 
-def wait_for_llm_as_a_judge(context: mlrun.MLClientCtx, previous_result: dict) -> dict:
+def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> dict:
     """
     Wait for the LLM to be ready as a judge.
 
@@ -12,4 +12,4 @@ def wait_for_llm_as_a_judge(context: mlrun.MLClientCtx, previous_result: dict) -
     :return: Updated TaskResult with LLM judge status.
     """
     previous_result = TaskResult(**previous_result)
-    return wait_for_llm_as_judge(context, previous_result)
+    return judge_task(context, previous_result)
