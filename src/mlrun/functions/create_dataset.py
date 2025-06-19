@@ -34,7 +34,7 @@ def create_dataset(
 
         datasets = DatasetCreator(
             records, flywheel_run_id, output_dataset_prefix, workload_id
-        ).create_datasets()
+        ).create_datasets(workload_type=workload_type)
 
         return {
             "workload_id": workload_id,
