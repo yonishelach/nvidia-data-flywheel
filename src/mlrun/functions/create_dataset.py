@@ -4,7 +4,9 @@ from src.lib.flywheel.util import identify_workload_type
 from src.lib.integration.dataset_creator import DatasetCreator
 from src.log_utils import setup_logging
 from src.api.db_manager import TaskDBManager
-from src.api.models import FlywheelRun, TaskResult
+from src.api.models import FlywheelRun
+from src.config import settings
+
 import mlrun
 
 db_manager = TaskDBManager()
@@ -26,7 +28,7 @@ def create_dataset(
     )
     flywheel_run_id = flywheel_run.id
     try:
-        records = RecordExporter().get_records(client_id, workload_id)
+        records = RecordExporter().get_records(client_id, workload_id, settings.data_split_config)
 
         workload_type = identify_workload_type(records)
 
