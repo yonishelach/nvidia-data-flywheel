@@ -124,5 +124,4 @@ def create_dataset(
         llm_judge_config=llm_as_judge_cfg,
         data_split_config=split_config,
     )
-    result = create_datasets(previous_result=previous_result)
-    return result.model_dump(mode="json")
+    return create_datasets(previous_result=previous_result)
