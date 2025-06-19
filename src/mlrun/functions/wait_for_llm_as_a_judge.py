@@ -1,5 +1,5 @@
 from src.api.models import TaskResult
-from src.tasks.tasks import init_worker, wait_for_llm_as_judge as judge_task
+from src.tasks.tasks import initialize_db_manager, wait_for_llm_as_judge as judge_task
 
 import mlrun
 
@@ -11,6 +11,6 @@ def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> 
     :param previous_result: Previous task result containing LLM judge configuration.
     :return: Updated TaskResult with LLM judge status.
     """
-    init_worker()
+    initialize_db_manager()
     previous_result = TaskResult(**previous_result)
     return judge_task.run(previous_result)

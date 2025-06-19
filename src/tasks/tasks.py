@@ -95,10 +95,15 @@ def worker_shutdown(sig, how, exitcode, **kwargs):
 @signals.worker_process_init.connect
 def init_worker(**kwargs):
     """Initialize database connection after worker process is forked."""
-    global db_manager
     init_db()
-    db_manager = get_db_manager()
+    initialize_db_manager()
 
+def initialize_db_manager() -> TaskDBManager:
+    """Initialize the TaskDBManager."""
+    global db_manager
+    if db_manager is None:
+        db_manager = get_db_manager()
+    return db_manager
 
 @celery_app.task(name="tasks.initialize_workflow", pydantic=True)
 def initialize_workflow(

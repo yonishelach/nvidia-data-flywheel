@@ -1,4 +1,4 @@
-from src.tasks.tasks import init_worker, shutdown_deployment as shutdown_task
+from src.tasks.tasks import initialize_db_manager, shutdown_deployment as shutdown_task
 from src.api.models import TaskResult
 
 import mlrun
@@ -12,6 +12,6 @@ def shutdown_deployment(context: mlrun.MLClientCtx, previous_result: dict) -> di
 
     :return: Updated TaskResult with shutdown status.
     """
-    init_worker()
+    initialize_db_manager()
     previous_result = TaskResult(**previous_result)
     return shutdown_task(previous_result=previous_result)
