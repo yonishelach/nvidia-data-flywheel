@@ -12,7 +12,7 @@ db_manager = TaskDBManager()
 def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict):
     previous_result = TaskResult(**previous_result)
     judge_cfg = settings.llm_judge_config
-    if judge_cfg.is_remote():
+    if judge_cfg.is_remote:
         logger.info("Remote LLM Judge will be used")
         previous_result.llm_judge_config = None
         return _prepare_output(previous_result)
