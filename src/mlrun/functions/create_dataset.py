@@ -115,10 +115,9 @@ def create_dataset(
         num_records=0,  # Will be updated when datasets are created
         nims=[],
     )
-    flywheel_run_id = flywheel_run.id
     previous_result = TaskResult(
         workload_id=workload_id,
-        flywheel_run_id=flywheel_run_id,
+        flywheel_run_id=str(flywheel_run.id),
         client_id=client_id,
         error=None,  # Reset any previous errors
         datasets={},
