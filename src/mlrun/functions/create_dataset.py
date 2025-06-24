@@ -21,7 +21,7 @@ def create_dataset(
 
     :return: A JSON representation of the TaskResult containing the created datasets and other metadata.
     """
-    initialize_db_manager()
+    db_manager = initialize_db_manager()
     llm_as_judge = LLMAsJudge()
     llm_as_judge_cfg = llm_as_judge.config
     split_config = DataSplitConfig(**data_split_config) if data_split_config else None
@@ -41,4 +41,11 @@ def create_dataset(
         llm_judge_config=llm_as_judge_cfg,
         data_split_config=split_config,
     )
-    return create_datasets(previous_result=previous_result)
+    output = create_datasets(previous_result=previous_result)
+    print("List all collections in the database:")
+    documents = db_manager._db["flywheel_runs"].find()
+    for document in documents:
+        print(document)
+    print("------")
+    print("previous_result:", previous_result)
+    print("------")
