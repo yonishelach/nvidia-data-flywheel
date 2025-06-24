@@ -1,6 +1,6 @@
 import mlrun
 from src.api.models import TaskResult
-from src.tasks.tasks import spin_up_nim as spin_up_task
+from src.tasks.tasks import initialize_db_manager, spin_up_nim as spin_up_task
 
 
 def spin_up_nim(
@@ -15,5 +15,6 @@ def spin_up_nim(
 
     :return: Updated TaskResult with NIM configuration.
     """
+    initialize_db_manager()
     previous_result = TaskResult(**previous_result)
     return spin_up_task.run(previous_result=previous_result, nim_config=nim_config)
