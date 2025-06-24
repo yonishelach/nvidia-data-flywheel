@@ -16,6 +16,13 @@ def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> 
     documents = db_manager._db["flywheel_runs"].find()
     for document in documents:
         print(document)
+    print("list judge collections:")
+    from bson import ObjectId
+    flywheel_run_id = previous_result.get("flywheel_run_id")
+    print("flywheel_run_id:", flywheel_run_id)
+    judge_collections = db_manager.llm_judge_runs.find_one({"flywheel_run_id": ObjectId(flywheel_run_id)})
+    for judge_collection in judge_collections:
+        print(judge_collection)
     print("------")
     print("previous_result:", previous_result)
     print("------")
