@@ -22,9 +22,6 @@ def create_dataset(
     :return: A JSON representation of the TaskResult containing the created datasets and other metadata.
     """
     db_manager = initialize_db_manager()
-    llm_as_judge = LLMAsJudge()
-    llm_as_judge_cfg = llm_as_judge.config
-    split_config = DataSplitConfig(**data_split_config) if data_split_config else None
     flywheel_run = FlywheelRun(
         workload_id=workload_id,
         client_id=client_id,
@@ -32,6 +29,11 @@ def create_dataset(
         num_records=0,  # Will be updated when datasets are created
         nims=[],
     )
+    result = db_manager._db.flywheel_runs.insert_one(flywheel_run.to_mongo())
+    flywheel_run.id = str(result.inserted_id)
+    llm_as_judge = LLMAsJudge()
+    llm_as_judge_cfg = llm_as_judge.config
+    split_config = DataSplitConfig(**data_split_config) if data_split_config else None
     previous_result = TaskResult(
         workload_id=workload_id,
         flywheel_run_id=str(flywheel_run.id),
