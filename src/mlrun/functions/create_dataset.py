@@ -43,11 +43,4 @@ def create_dataset(
         llm_judge_config=llm_as_judge_cfg,
         data_split_config=split_config,
     )
-    output = create_datasets(previous_result=previous_result)
-    print("List all collections in the database:")
-    documents = db_manager._db["flywheel_runs"].find()
-    for document in documents:
-        print(document)
-    print("------")
-    print("previous_result:", previous_result)
-    print("------")
+    return create_datasets(previous_result=previous_result)
