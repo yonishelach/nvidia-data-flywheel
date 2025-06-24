@@ -1,7 +1,8 @@
 import mlrun
 from datetime import datetime
-from src.api.models import DataSplitConfig, FlywheelRun, TaskResult
-from src.tasks.tasks import create_datasets, initialize_db_manager
+from bson import ObjectId
+from src.api.models import DataSplitConfig, DeploymentStatus, FlywheelRun, LLMJudgeRun, TaskResult
+from src.tasks.tasks import create_datasets, initialize_db_manager, initialize_workflow
 from src.lib.nemo.llm_as_judge import LLMAsJudge
 
 def create_dataset(
@@ -31,16 +32,32 @@ def create_dataset(
     )
     result = db_manager._db.flywheel_runs.insert_one(flywheel_run.to_mongo())
     flywheel_run.id = str(result.inserted_id)
-    llm_as_judge = LLMAsJudge()
-    llm_as_judge_cfg = llm_as_judge.config
-    split_config = DataSplitConfig(**data_split_config) if data_split_config else None
-    previous_result = TaskResult(
+    result = initialize_workflow.run(
         workload_id=workload_id,
-        flywheel_run_id=str(flywheel_run.id),
+        flywheel_run_id=flywheel_run.id,
         client_id=client_id,
-        error=None,  # Reset any previous errors
-        datasets={},
-        llm_judge_config=llm_as_judge_cfg,
-        data_split_config=split_config,
+        data_split_config=data_split_config if data_split_config else None,
     )
+    # llm_as_judge = LLMAsJudge()
+    # llm_as_judge_cfg = llm_as_judge.config
+    # llm_judge_run = LLMJudgeRun(
+    #     flywheel_run_id=ObjectId(flywheel_run.id),
+    #     model_name=llm_as_judge_cfg.model_name,
+    #     type=llm_as_judge_cfg.type,
+    #     deployment_status=(
+    #         DeploymentStatus.READY if llm_as_judge_cfg.is_remote else DeploymentStatus.CREATED
+    #     ),
+    # )
+    # llm_judge_run.id = db_manager.create_llm_judge_run(llm_judge_run)
+    # split_config = DataSplitConfig(**data_split_config) if data_split_config else None
+    # previous_result = TaskResult(
+    #     workload_id=workload_id,
+    #     flywheel_run_id=str(flywheel_run.id),
+    #     client_id=client_id,
+    #     error=None,  # Reset any previous errors
+    #     datasets={},
+    #     llm_judge_config=llm_as_judge_cfg,
+    #     data_split_config=split_config,
+    # )
+    previous_result = TaskResult(**result)
     return create_datasets(previous_result=previous_result)
