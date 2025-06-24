@@ -11,6 +11,12 @@ def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> 
     :param previous_result: Previous task result containing LLM judge configuration.
     :return: Updated TaskResult with LLM judge status.
     """
-    initialize_db_manager()
+    db_manager = initialize_db_manager()
+    print("List all collections in the database:")
+    collections = db_manager._db.list_collections()
+    print(collections)
+    print("------")
+    print("previous_result:", previous_result)
+    print("------")
     previous_result = TaskResult(**previous_result)
     return judge_task.run(previous_result)
