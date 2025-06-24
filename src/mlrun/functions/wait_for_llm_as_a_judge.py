@@ -13,8 +13,8 @@ def wait_for_llm_as_judge(context: mlrun.MLClientCtx, previous_result: dict) -> 
     """
     db_manager = initialize_db_manager()
     print("List all collections in the database:")
-    collections = db_manager._db.list_collection_names()
-    print(collections)
+    collection = db_manager._db["flywheel_runs"].find()
+    print(collection)
     print("------")
     print("previous_result:", previous_result)
     print("------")
