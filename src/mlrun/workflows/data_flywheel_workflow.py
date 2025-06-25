@@ -101,7 +101,7 @@ def pipeline(
     wait_for_llm_as_judge_function = project.get_function(
         "wait-for-llm-as-a-judge", ignore_cache=True
     )
-    wait_result =  project.run_function(
+    wait_result = project.run_function(
         wait_for_llm_as_judge_function,
         inputs={
             "previous_result": create_dataset_result.outputs["previous_result"],
@@ -111,7 +111,5 @@ def pipeline(
 
     sequential_deployment(
         configs=configs,
-        workload_id=workload_id,
-        client_id=client_id,
         dataset=wait_result.outputs["previous_result"],
     )
