@@ -1,11 +1,12 @@
 import kfp
+import json
 import mlrun
 import kfp.dsl as dsl
 from kfp.dsl import component
 
 @component
 def sequential_deployment(
-    configs: list,
+    configs_json: str,
     dataset: str,
 ):
     # Get the project:
@@ -16,6 +17,7 @@ def sequential_deployment(
     shutdown_function = project.get_function("shutdown-deployment", ignore_cache=True)
 
     prev_result = dataset
+    configs = json.loads(configs_json)
 
     for i, config in enumerate(configs):
         spin_up_result = project.run_function(
@@ -110,6 +112,6 @@ def pipeline(
     )
 
     sequential_deployment(
-        configs=configs,
+        configs_json=json.dumps(configs),
         dataset=wait_result.outputs["previous_result"],
     )
