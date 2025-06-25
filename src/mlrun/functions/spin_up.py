@@ -17,4 +17,7 @@ def spin_up_nim(
     """
     initialize_db_manager()
     previous_result = TaskResult(**previous_result)
+    print("--" * 50)
+    print("Spinning up NIM with configuration:", nim_config)
+    print("--" * 50)
     return spin_up_task.run(previous_result=previous_result, nim_config=nim_config)
