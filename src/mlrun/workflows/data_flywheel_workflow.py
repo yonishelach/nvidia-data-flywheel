@@ -85,7 +85,7 @@ def sequential_deployment(
 def pipeline(
     workload_id: str,
     client_id: str,
-    configs: list,
+    configs_json: str,
 ):
     # Get the project:
     project = mlrun.get_current_project()
@@ -112,6 +112,6 @@ def pipeline(
     )
 
     sequential_deployment(
-        configs_json=json.dumps(configs),
+        configs_json=configs_json,
         dataset=wait_result.outputs["previous_result"],
     )
