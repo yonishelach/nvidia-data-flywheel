@@ -1,3 +1,4 @@
+import json
 import mlrun
 from src.api.models import TaskResult
 from src.tasks.tasks import initialize_db_manager, spin_up_nim as spin_up_task
@@ -17,7 +18,7 @@ def spin_up_nim(
     """
     initialize_db_manager()
     previous_result = TaskResult(**previous_result)
-    print("--" * 50)
-    print("Spinning up NIM with configuration:", nim_config)
-    print("--" * 50)
+    if isinstance(nim_config, str):
+        # If nim_config is a string, assume it's a JSON string and parse it
+        nim_config = json.loads(nim_config)
     return spin_up_task.run(previous_result=previous_result, nim_config=nim_config)
