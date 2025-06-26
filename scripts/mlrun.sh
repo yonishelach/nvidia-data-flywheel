@@ -74,6 +74,33 @@ docker push "$DOCKER_SERVER"/mlrun-data-flywheel:latest
 kubectl exec -n $MLRUN_NAMESPACE "$(kubectl get ep mlrun-jupyter -n $MLRUN_NAMESPACE -o jsonpath='{.subsets[*].addresses[*].targetRef.name}')" -- \
   git clone https://github.com/mlrun/nvidia-data-flywheel.git
 
+# Create a service account for the mlrun-jupyter pod to access secrets:
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-manager
+  namespace: mlrun
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mlrun-jupyter-secret-binding
+  namespace: mlrun
+subjects:
+- kind: ServiceAccount
+  name: mlrun-jupyter
+  namespace: mlrun
+roleRef:
+  kind: Role
+  name: secret-manager
+  apiGroup: rbac.authorization.k8s.io
+EOF
+
 # Port forward all essential services and afterwards expose them in the UI:
 kubectl port-forward --namespace $MLRUN_NAMESPACE service/mlrun-jupyter 30040:8888 --address=0.0.0.0 &
 kubectl port-forward --namespace $MLRUN_NAMESPACE service/nuclio-dashboard 30050:8070 --address=0.0.0.0 &
