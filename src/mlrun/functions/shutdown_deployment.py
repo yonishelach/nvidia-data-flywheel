@@ -97,7 +97,7 @@ def _create_plot_artifact(
         width=900,
     )
     context.log_artifact(
-        "plotly-artifact",
+        "evaluation-results-plot",
         body=fig.to_html(),  # convert object for logging an html file
         format="html",
     )
