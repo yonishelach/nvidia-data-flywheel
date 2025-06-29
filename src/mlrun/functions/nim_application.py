@@ -78,7 +78,6 @@ class NIMApplication(Application):
         self,
         force_redeploy: bool = False,
         application_internal_application_port: int = 8000,
-        application_node_selection: dict = None,
         api_gateway_path: str = None,
         api_gateway_direct_port_access: bool = False,
         api_gateway_authentication_mode: APIGatewayAuthenticationMode = None,
@@ -91,7 +90,6 @@ class NIMApplication(Application):
         self._set_secrets()
         self._deploy_application(
             internal_application_port=application_internal_application_port,
-            node_selection=application_node_selection,
         )
         self._create_api_gateway(
             path=api_gateway_path,
@@ -105,7 +103,6 @@ class NIMApplication(Application):
     def _deploy_application(
             self,
             internal_application_port: int = 8000,
-            node_selection: dict = None,
     ):
         # mlrun api = 192.168.49.2:30070
         if not self._ngc_secret_name or not self._docker_creds_secret_name:
@@ -131,8 +128,7 @@ class NIMApplication(Application):
         application_runtime.set_image_pull_configuration(
             image_pull_secret_name=self._docker_creds_secret_name
         )
-        if node_selection:
-            application_runtime.with_node_selection(node_selector=node_selection)
+        application_runtime.with_limits(gpus=1)
         application_runtime.deploy(create_default_api_gateway=False)
         self._application_runtime = application_runtime
 
