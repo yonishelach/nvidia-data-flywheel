@@ -28,7 +28,7 @@ spec:
   - url: src/mlrun/finalize.py
     name: finalize
     kind: job
-    handler: finalize_flywheel_run
+    handler: finalize
     with_repo: true
   - url: src/mlrun/shutdown_deployment.py
     name: shutdown-deployment
