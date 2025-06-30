@@ -110,13 +110,12 @@ def pipeline(
 
         project.run_function(
             finalize_function,
-            name=f"finalize-deployment",
+            name="finalize",
             inputs={
                 "base_eval_result": base_eval_result.outputs["previous_result"],
                 "icl_eval_result": icl_eval_result.outputs["previous_result"],
                 "customization_eval_result": customization_eval_result.outputs["previous_result"],
             },
-            returns=["previous_result: file"],
         )
 
         shutdown_result = project.run_function(
