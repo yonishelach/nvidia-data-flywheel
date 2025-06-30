@@ -49,6 +49,7 @@ def pipeline(
     spin_up_function = project.get_function("spin-up-nims", ignore_cache=True)
     evaluate_function = project.get_function("evaluate", ignore_cache=True)
     customize_function = project.get_function("customize", ignore_cache=True)
+    finalize_function = project.get_function("finalize", ignore_cache=True)
     shutdown_function = project.get_function("shutdown-deployment", ignore_cache=True)
 
     previous_shutdown_result = None
@@ -103,6 +104,17 @@ def pipeline(
             handler="run_customization_eval",
             inputs={
                 "previous_result": customize_result.outputs["previous_result"],
+            },
+            returns=["previous_result: file"],
+        )
+
+        project.run_function(
+            finalize_function,
+            name=f"finalize-deployment",
+            inputs={
+                "base_eval_result": base_eval_result.outputs["previous_result"],
+                "icl_eval_result": icl_eval_result.outputs["previous_result"],
+                "customization_eval_result": customization_eval_result.outputs["previous_result"],
             },
             returns=["previous_result: file"],
         )
