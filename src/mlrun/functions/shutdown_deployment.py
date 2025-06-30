@@ -1,5 +1,6 @@
 import mlrun
-from src.tasks.tasks import initialize_db_manager, shutdown_deployment as shutdown_task
+from src.tasks.tasks import initialize_db_manager
+from src.tasks.tasks import shutdown_deployment as shutdown_task
 
 
 def shutdown_deployment(

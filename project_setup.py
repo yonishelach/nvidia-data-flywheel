@@ -34,41 +34,46 @@ def setup(
     if ngc_api_key:
         project.set_secrets(secrets={'NGC_API_KEY': ngc_api_key})
 
+    functions_dir = "src/mlrun/functions"
     _set_function(
         project=project,
-        func="src/mlrun/functions/create_dataset.py",
+        func=f"{functions_dir}/create_dataset.py",
         name="create-dataset",
         handler="create_dataset",
     )
-
     _set_function(
         project=project,
-        func="src/mlrun/functions/wait_for_llm_as_a_judge.py",
+        func=f"{functions_dir}/wait_for_llm_as_a_judge.py",
         name="wait-for-llm-as-a-judge",
         handler="wait_for_llm_as_judge",
     )
-
     _set_function(
         project=project,
-        func="src/mlrun/functions/spin_up.py",
+        func=f"{functions_dir}/spin_up.py",
         name="spin-up-nims",
         handler="spin_up_nim",
     )
     _set_function(
         project=project,
-        func="src/mlrun/functions/evaluate.py",
+        func=f"{functions_dir}/evaluate.py",
         name="evaluate",
         handler="run_base_eval",
     )
     _set_function(
         project=project,
-        func="src/mlrun/functions/customization.py",
+        func=f"{functions_dir}/customization.py",
         name="customize",
         handler="start_customization",
     )
     _set_function(
         project=project,
-        func="src/mlrun/functions/shutdown_deployment.py",
+        func=f"{functions_dir}/finalize.py",
+        name="finalize",
+        handler="finalize",
+    )
+    _set_function(
+        project=project,
+        func=f"{functions_dir}/shutdown_deployment.py",
         name="shutdown-deployment",
         handler="shutdown_deployment",
     )
