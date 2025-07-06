@@ -51,13 +51,16 @@ class NIMApplication(Application):
         project_name: str = None,
         image_name: str = None,
         generation_configuration: dict = None,
+        num_gpus: int = 0,
+        tag: str = None,
     ):
         super().__init__(name=name, project_name=project_name)
         self._model_name = model_name
-        self._image_name = image_name or f"nvcr.io/nim/{model_name}:latest"
+        self._tag = tag or "latest"
+        self._image_name = image_name or f"nvcr.io/nim/{model_name}:{self._tag}"
         self._ngc_api_key = self._project.get_secret("NGC_API_KEY")
         self._generation_configuration = generation_configuration or {}
-
+        self._num_gpus = num_gpus
         self._docker_creds_secret_name = None
         self._ngc_secret_name = None
 
@@ -87,7 +90,6 @@ class NIMApplication(Application):
     ):
         if not force_redeploy and self.is_deployed():
             return
-        self._set_secrets()
         self._deploy_application(
             internal_application_port=application_internal_application_port,
         )
@@ -104,10 +106,6 @@ class NIMApplication(Application):
             self,
             internal_application_port: int = 8000,
     ):
-        # mlrun api = 192.168.49.2:30070
-        if not self._ngc_secret_name or not self._docker_creds_secret_name:
-            raise Exception("Secrets are not created. Can not deploy the application.")
-
         application_runtime = self._project.set_function(
             name=self._name, kind="application", image=self._image_name
         )
@@ -117,45 +115,41 @@ class NIMApplication(Application):
         application_runtime.set_env_from_secret(
             secret=self._ngc_secret_name, name="NGC_API_KEY"
         )
-        # application_runtime.spec.env.append(
-        #     {
-        #         "name": "LD_LIBRARY_PATH",
-        #         "value": "/usr/local/lib/python3.10/dist-packages/tensorrt_llm/libs:"
-        #                  "/usr/local/lib/python3.10/dist-packages/nvidia/cublas/lib:"
-        #                  "/usr/local/lib/python3.10/dist-packages/tensorrt_libs",
-        #     }
-        # )
+        application_runtime.set_env("NIM_GUIDED_DECODING_BACKEND", "outlines")
         application_runtime.set_image_pull_configuration(
-            image_pull_secret_name=self._docker_creds_secret_name
+            image_pull_secret_name="nvcrimagepullsecret"
         )
-        application_runtime.with_limits(gpus=1)
+        application_runtime.spec.config["spec.build.registry"] = mlrun.mlconf.httpdb.builder.docker_registry
+        application_runtime.spec.readiness_timeout = 1400
+        if self._num_gpus > 0:
+            application_runtime.with_limits(gpus=self._num_gpus)
         application_runtime.deploy(create_default_api_gateway=False)
         self._application_runtime = application_runtime
 
     def _create_api_gateway(
-            self,
-            name: str = None,
-            path: str = None,
-            direct_port_access: bool = False,
-            authentication_mode: APIGatewayAuthenticationMode = None,
-            authentication_creds: tuple[str, str] = None,
-            ssl_redirect: bool = None,
-            set_as_default: bool = False,
+        self,
+        name: str = None,
+        path: str = None,
+        direct_port_access: bool = False,
+        authentication_mode: APIGatewayAuthenticationMode = None,
+        authentication_creds: tuple[str, str] = None,
+        ssl_redirect: bool = None,
+        set_as_default: bool = False,
     ):
         """
         Create the application API gateway. Once the application is deployed, the API gateway can be created.
         An application without an API gateway is not accessible.
 
-        :param name:                    The name of the API gateway, defaults to <function-name>-<function-tag>
-        :param path:                    Optional path of the API gateway, default value is "/"
-        :param direct_port_access:      Set True to allow direct port access to the application sidecar
-        :param authentication_mode:     API Gateway authentication mode
-        :param authentication_creds:    API Gateway basic authentication credentials as a tuple (username, password)
-        :param ssl_redirect:            Set True to force SSL redirect, False to disable. Defaults to
-                                        mlrun.mlconf.force_api_gateway_ssl_redirect()
-        :param set_as_default:          Set the API gateway as the default for the application (`status.api_gateway`)
+        :param name:                 The name of the API gateway, defaults to <function-name>-<function-tag>.
+        :param path:                 Optional path of the API gateway, default value is "/".
+        :param direct_port_access:   Set True to allow direct port access to the application sidecar.
+        :param authentication_mode:  API Gateway authentication mode.
+        :param authentication_creds: API Gateway basic authentication credentials as a tuple (username, password).
+        :param ssl_redirect:         Set True to force SSL redirect, False to disable. Defaults to
+                                     mlrun.mlconf.force_api_gateway_ssl_redirect().
+        :param set_as_default:       Set the API gateway as the default for the application (`status.api_gateway`).
 
-        :return:    The API gateway URL
+        :return: The API gateway URL
         """
         if not self.is_deployed():
             raise "API gateway can not be created - Application is not deployed."
@@ -175,65 +169,6 @@ class NIMApplication(Application):
         self._application_runtime._sync_api_gateway()
         api_gateway = self._project.get_api_gateway(name=name)
         self._application_runtime.api_gateway = api_gateway
-
-    def _set_secrets(self):
-        self._create_docker_creds_secret()
-        self._create_secret_with_api_key()
-
-    def _create_docker_creds_secret(self):
-        # Command which creates a secret to pull NIM image
-        self._docker_creds_secret_name = (
-            f"{self._project.name}-{self._name}-nim-creds".replace("/", "-")
-        )
-        self._execute_command(
-            command=[
-                "kubectl",
-                "delete",
-                "secret",
-                self._docker_creds_secret_name
-            ],
-            ignore_error=True
-        )
-        self._execute_command(
-            command=[
-                "kubectl",
-                "create",
-                "secret",
-                "docker-registry",
-                self._docker_creds_secret_name,
-                "--docker-server=nvcr.io",
-                r"--docker-username=\$oauthtoken",
-                f"--docker-password={self._ngc_api_key}",
-                "--namespace=mlrun",
-            ],
-            ignore_error=False
-        )
-
-    def _create_secret_with_api_key(self):
-        self._ngc_secret_name = (
-            f"{self._project.name}-{self._name}-ngc-api-key".replace("/", "-")
-        )
-        self._execute_command(
-            command=[
-                "kubectl",
-                "delete",
-                "secret",
-                self._ngc_secret_name
-            ],
-            ignore_error=True
-        )
-        self._execute_command(
-            command=[
-                "kubectl",
-                "create",
-                "secret",
-                "generic",
-                self._ngc_secret_name,
-                f"--from-literal=NGC_API_KEY={self._ngc_api_key}",
-                "--namespace=mlrun",
-            ],
-            ignore_error=False
-        )
 
     @staticmethod
     def _execute_command(command: list[str], ignore_error: bool):

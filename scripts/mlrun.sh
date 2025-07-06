@@ -1,10 +1,10 @@
 DOCKER_SERVER="${DOCKER_SERVER:-}"
 DOCKER_USERNAME="${DOCKER_USERNAME:- }"
 DOCKER_PASSWORD="${DOCKER_PASSWORD:- }"
-DOCKER_REGISTRY_URL="${DOCKER_REGISTRY_URL:-}"
 MLRUN_NAMESPACE="mlrun"
+
 # Set up a local docker registry on the minikube cluster only if docker registry is not provided:
-if [ -z "$DOCKER_REGISTRY_URL" ]; then
+if [ -z "$DOCKER_SERVER" ]; then
   LOCAL_DOCKER_REGISTRY_FLAG=1
 else
   LOCAL_DOCKER_REGISTRY_FLAG=0
@@ -28,7 +28,6 @@ helm repo update
 if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 1 ]; then
   echo "No docker registry URL provided, setting up a local docker registry on the minikube cluster..."
   minikube addons enable registry
-  DOCKER_REGISTRY_URL="http://$(minikube ip):5000"
   DOCKER_SERVER="$(minikube ip):5000"
 
   # wait for the registry to be ready:
@@ -49,9 +48,15 @@ kubectl --namespace $MLRUN_NAMESPACE create secret docker-registry registry-cred
     --docker-username "$DOCKER_USERNAME" \
     --docker-password="$DOCKER_PASSWORD"
 
+# Creat NGC secret for NVIDIA GPU support:
+kubectl --namespace $MLRUN_NAMESPACE create secret docker-registry nvcrimagepullsecret \
+  --docker-server=nvcr.io \
+  --docker-username='$oauthtoken' \
+  --docker-password="$NGC_API_KEY"
+
 # Install mlrun ce:
 helm --namespace $MLRUN_NAMESPACE install mlrun-ce --wait --timeout 960s \
-  --set global.registry.url="$DOCKER_REGISTRY_URL" \
+  --set global.registry.url="$DOCKER_SERVER" \
   --set global.registry.secretName=registry-credentials \
   --set mlrun.api.image.tag=1.9.0-rc8 \
   --set mlrun.ui.image.tag=1.9.0-rc8 \
@@ -63,43 +68,17 @@ helm --namespace $MLRUN_NAMESPACE install mlrun-ce --wait --timeout 960s \
 if [ $LOCAL_DOCKER_REGISTRY_FLAG -eq 0 ]; then
   # log in to Docker registry if not using local registry:
   echo "$DOCKER_PASSWORD" | docker login "$DOCKER_SERVER" -u "$DOCKER_USERNAME" --password-stdin
+else
+  eval "$(minikube docker-env)"
 fi
 
 # Build and push mlrun-data-flywheel image:
-eval "$(minikube docker-env)"
 docker build -t "$DOCKER_SERVER"/mlrun-data-flywheel:latest -f deploy/mlrun/Dockerfile .
 docker push "$DOCKER_SERVER"/mlrun-data-flywheel:latest
 
 # Clone the mlrun repository into the mlrun-jupyter pod:
 kubectl exec -n $MLRUN_NAMESPACE "$(kubectl get ep mlrun-jupyter -n $MLRUN_NAMESPACE -o jsonpath='{.subsets[*].addresses[*].targetRef.name}')" -- \
   git clone https://github.com/mlrun/nvidia-data-flywheel.git
-
-# Create a service account for the mlrun-jupyter pod to access secrets:
-kubectl apply -f - <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: secret-manager
-  namespace: mlrun
-rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["get", "list", "create", "update", "delete"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: mlrun-jupyter-secret-binding
-  namespace: mlrun
-subjects:
-- kind: ServiceAccount
-  name: mlrun-jupyter
-  namespace: mlrun
-roleRef:
-  kind: Role
-  name: secret-manager
-  apiGroup: rbac.authorization.k8s.io
-EOF
 
 # Port forward all essential services and afterwards expose them in the UI:
 kubectl port-forward --namespace $MLRUN_NAMESPACE service/mlrun-jupyter 30040:8888 --address=0.0.0.0 &
