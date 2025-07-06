@@ -61,21 +61,14 @@ class NIMApplication(Application):
         self._ngc_api_key = self._project.get_secret("NGC_API_KEY")
         self._generation_configuration = generation_configuration or {}
         self._num_gpus = num_gpus
-        self._docker_creds_secret_name = None
-        self._ngc_secret_name = None
 
-        try:
-            self._application_runtime = self._project.get_function(
-                key=self._name, ignore_cache=True
-            )
+        self._application_runtime = self._project.get_function(
+            key=self._name, ignore_cache=True
+        )
+        if  self._application_runtime:
             logger.info(
                 f"Found an existing application. Status: {self._application_runtime.status.to_json()}"
             )
-        except requests.exceptions.HTTPError:
-            if not self._ngc_api_key:
-                raise ValueError(
-                    "NGC API key is required to deploy the NIM application."
-                )
 
     def deploy(
         self,
@@ -93,14 +86,6 @@ class NIMApplication(Application):
         self._deploy_application(
             internal_application_port=application_internal_application_port,
         )
-        self._create_api_gateway(
-            path=api_gateway_path,
-            direct_port_access=api_gateway_direct_port_access,
-            authentication_mode=api_gateway_authentication_mode,
-            authentication_creds=api_gateway_authentication_creds,
-            ssl_redirect=api_gateway_ssl_redirect,
-            set_as_default=api_gateway_set_as_default,
-        )  # TODO: set_as_default=True to skip syncing
 
     def _deploy_application(
             self,
@@ -111,9 +96,6 @@ class NIMApplication(Application):
         )
         application_runtime.set_internal_application_port(
             port=internal_application_port
-        )
-        application_runtime.set_env_from_secret(
-            secret=self._ngc_secret_name, name="NGC_API_KEY"
         )
         application_runtime.set_env("NIM_GUIDED_DECODING_BACKEND", "outlines")
         application_runtime.set_image_pull_configuration(
@@ -169,18 +151,6 @@ class NIMApplication(Application):
         self._application_runtime._sync_api_gateway()
         api_gateway = self._project.get_api_gateway(name=name)
         self._application_runtime.api_gateway = api_gateway
-
-    @staticmethod
-    def _execute_command(command: list[str], ignore_error: bool):
-        command = " ".join(command)
-        result = subprocess.run(
-            command, shell=True, capture_output=True, text=True
-        )
-        if result.returncode != 0:
-            error = f"Failed to execute command '{command}': {result.stderr}"
-            logger.error(error)
-            if not ignore_error:
-                raise Exception(error)
 
     def invoke(
             self,
