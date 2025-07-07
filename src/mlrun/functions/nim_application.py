@@ -62,10 +62,13 @@ class NIMApplication(Application):
         self._generation_configuration = generation_configuration or {}
         self._num_gpus = num_gpus
 
-        self._application_runtime = self._project.get_function(
-            key=self._name, ignore_cache=True
-        )
-        if  self._application_runtime:
+        try:
+            self._application_runtime = self._project.get_function(
+                key=self._name, ignore_cache=True
+            )
+        except mlrun.errors.MLRunNotFoundError:
+            self._application_runtime = None
+        else:
             logger.info(
                 f"Found an existing application. Status: {self._application_runtime.status.to_json()}"
             )
