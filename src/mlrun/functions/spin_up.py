@@ -1,3 +1,4 @@
+import json
 import mlrun
 import requests
 
@@ -17,6 +18,9 @@ def spin_up_nim(
 
     :return: Updated TaskResult with NIM configuration.
     """
+    if isinstance(nim_config, str):
+        # If nim_config is a string, assume it's a JSON string and parse it
+        nim_config = json.loads(nim_config)
     model_name = nim_config.get("model_name")
     formatted_model_name = model_name.replace('/', '-')
 
