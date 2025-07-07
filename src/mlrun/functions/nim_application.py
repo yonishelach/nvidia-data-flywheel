@@ -23,7 +23,7 @@ from mlrun.utils import logger
 
 class Application(ABC):
     def __init__(self, name: str, project_name: str = None, *args, **kwargs):
-        self._name = name
+        self._name = name.replace(".", "-")
         self._project = (
             mlrun.get_or_create_project(project_name)
             if project_name
