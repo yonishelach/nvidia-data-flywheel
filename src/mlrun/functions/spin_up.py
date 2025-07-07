@@ -49,7 +49,7 @@ def spin_up_nim(
             ]
         },
     }
-    resp = requests.post(f"http://{settings.nmp_config.nemo_base_url}/v1/deployment/configs", json=payload)
+    resp = requests.post(f"{settings.nmp_config.nemo_base_url}/v1/deployment/configs", json=payload)
     if resp.status_code != 200:
         context.logger.error(f"Failed to add deployment config: {resp.text}")
         raise Exception(f"Failed to add deployment config: {resp.text}")
