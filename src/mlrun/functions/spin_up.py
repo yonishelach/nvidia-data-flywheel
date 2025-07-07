@@ -43,7 +43,6 @@ def spin_up_nim(
     payload = {
         "name": formatted_model_name,
         "namespace": settings.nmp_config.nmp_namespace,
-        "model": model_name,
         "external_endpoint": {
             "host_url": f"http://{nim_application.get_url()}:32221",
             "enabled_models": [
