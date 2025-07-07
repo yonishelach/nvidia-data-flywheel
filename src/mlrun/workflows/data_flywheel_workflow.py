@@ -62,6 +62,7 @@ def pipeline(
             },
             params={
                 "nim_config": config,
+                "project_name": project.name,
             },
             returns=["previous_result: file"],
         )

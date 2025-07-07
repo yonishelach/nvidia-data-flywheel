@@ -7,7 +7,7 @@ from src.mlrun.functions.nim_application import NIMApplication
 from src.config import settings
 
 def spin_up_nim(
-    context: mlrun.MLClientCtx, previous_result: dict, nim_config: dict
+    context: mlrun.MLClientCtx, previous_result: dict, nim_config: dict, project_name: str = None
 ) -> dict:
     """
     Spin up a NIM for the given previous result.
@@ -15,6 +15,7 @@ def spin_up_nim(
     :param context:         MLRun context.
     :param previous_result: Previous task result containing necessary configurations.
     :param nim_config:      Configuration for the NIM to be spun up.
+    :param project_name:    Name of the project (optional).
 
     :return: Updated TaskResult with NIM configuration.
     """
@@ -29,6 +30,7 @@ def spin_up_nim(
         model_name=model_name,
         image_name=nim_config.get("image_name"),
         tag=nim_config.get("tag", "latest"),
+        project_name=project_name,
     )
     if not nim_application.is_deployed():
         nim_application.deploy()
