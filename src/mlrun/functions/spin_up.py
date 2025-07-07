@@ -42,10 +42,12 @@ def spin_up_nim(
     # add deployment config to nemo:
     payload = {
         "name": formatted_model_name,
+        "namespace": settings.nmp_config.nmp_namespace,
+        "model": model_name,
         "external_endpoint": {
             "host_url": f"http://{nim_application.get_url()}:32221",
             "enabled_models": [
-                "meta/llama-3.2-1b-instruct"
+                model_name
             ]
         },
     }
