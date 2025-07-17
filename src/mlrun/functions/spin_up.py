@@ -57,4 +57,16 @@ def spin_up_nim(
         context.logger.error(f"Failed to add deployment config: {response.text}")
         raise Exception(f"Failed to add deployment config: {response.text}")
     context.logger.info(f"Deployment config added successfully: {response.json()}")
+    # check that the nim_application is deployed by checking api endpoint:
+    timeout = 300
+    while timeout > 0:
+        try:
+            response = requests.get(f"http://{nim_application.get_url()}/health")
+            if response.ok:
+                context.logger.info(f"NIM application {nim_application._name} is up and running.")
+                break
+        except requests.exceptions.RequestException as e:
+            context.logger.warning(f"Waiting for NIM application {nim_application._name} to be ready: {e}")
+        timeout -= 5
+        mlrun.utils.helpers.sleep(5)
     return previous_result
