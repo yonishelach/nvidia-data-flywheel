@@ -104,7 +104,6 @@ class NIMApplication(Application):
         application_runtime.set_image_pull_configuration(
             image_pull_secret_name="nvcrimagepullsecret"
         )
-        application_runtime.spec.config["spec.build.registry"] = mlrun.mlconf.httpdb.builder.docker_registry
         application_runtime.spec.readiness_timeout = 1400
         if self._num_gpus > 0:
             application_runtime.with_limits(gpus=self._num_gpus)

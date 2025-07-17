@@ -106,6 +106,8 @@ class TaskResult(BaseModel):
     # Store error message if any stage fails so downstream tasks can short-circuit
     error: str | None = None
     data_split_config: DataSplitConfig | None = None
+    evaluation_targets: list[str] | None = None
+    mlrun_function: str | None = None
 
     def add_evaluation(self, eval_type: EvalType, result: EvaluationResult):
         """Helper method to add/update evaluation results"""

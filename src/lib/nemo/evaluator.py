@@ -469,10 +469,10 @@ class Evaluator:
             config = self.get_llm_as_judge_config(
                 dataset_name=dataset_name, test_file=test_file, limit=limit
             )
-
+        target = target_model if "/" in target_model else {"type": "model", "model": target_model}
         res = requests.post(
             f"{self.nemo_url}/v1/evaluation/jobs",
-            json={"config": config, "target": {"type": "model", "model": target_model}},
+            json={"config": config, "target": target},
         )
 
         assert res.status_code in (200, 201), f"Failed to launch evaluation job: {res.text}"

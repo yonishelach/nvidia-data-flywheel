@@ -529,11 +529,15 @@ def run_generic_eval(
         try:
             # Based on the eval type, use the appropriate model name.
             # Use customized model name for customization evaluation
-            target_model = (
-                previous_result.customization.model_name
-                if eval_type == EvalType.CUSTOMIZED
-                else previous_result.nim.target_model_for_evaluation()
-            )
+            # For using NIM for evaluation, use the target model.
+            target_model = None
+            if eval_type == EvalType.CUSTOMIZED:
+                target_model = previous_result.customization.model_name
+            elif previous_result.evaluation_targets:
+                target_model = previous_result.evaluation_targets[0]
+                previous_result.evaluation_targets = previous_result.evaluation_targets[1:]
+            else:
+                target_model = previous_result.nim.target_model_for_evaluation()
 
             job_id = evaluator.run_evaluation(
                 dataset_name=previous_result.datasets[dataset_type],

@@ -39,21 +39,25 @@ def spin_up_nim(
     initialize_db_manager()
     # Add NIM configuration to the previous result
     previous_result["nim"] = nim_config
-    # add deployment config to nemo:
+    # Create evaluation targets:
     payload = {
+        "type": "model",
         "name": formatted_model_name,
         "namespace": settings.nmp_config.nmp_namespace,
-        "external_endpoint": {
-            "host_url": f"http://{nim_application.get_url()}:32221",
-            "enabled_models": [
-                model_name
-            ]
-        },
+        "model": {
+            "api_endpoint": {
+                "url": f"http://{nim_application.get_url()}/chat/completions",
+                "model_id": model_name,
+                "format": "openai"
+            }
+        }
     }
-    resp = requests.post(f"{settings.nmp_config.nemo_base_url}/v1/deployment/configs", json=payload)
-    if resp.status_code != 200:
-        context.logger.error(f"Failed to add deployment config: {resp.text}")
-        raise Exception(f"Failed to add deployment config: {resp.text}")
-    context.logger.info(f"Deployment config added successfully: {resp.json()}")
-
+    # Add the NIM model to the evaluation targets:
+    previous_result["evaluation_targets"] = [f"{settings.nmp_config.nmp_namespace}/{formatted_model_name}"]
+    previous_result["mlrun_function"] = f"nim-{formatted_model_name}"
+    response = requests.post(f"{settings.nmp_config.nemo_base_url}/v1/evaluation/targets", json=payload)
+    if response.status_code != 200:
+        context.logger.error(f"Failed to add deployment config: {response.text}")
+        raise Exception(f"Failed to add deployment config: {response.text}")
+    context.logger.info(f"Deployment config added successfully: {response.json()}")
     return previous_result

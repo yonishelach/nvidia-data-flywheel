@@ -126,6 +126,7 @@ def pipeline(
                 "base_eval_result": base_eval_result.outputs["previous_result"],
                 "icl_eval_result": icl_eval_result.outputs["previous_result"],
                 "customization_eval_result": customization_eval_result.outputs["previous_result"],
+                "project_name": project.name,
             },
             returns=["previous_result: file"],
         )
