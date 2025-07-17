@@ -61,7 +61,7 @@ def spin_up_nim(
     timeout = 300
     while timeout > 0:
         try:
-            response = requests.get(f"http://{nim_application.get_url()}/v1/health")
+            response = requests.get(f"http://{nim_application.get_url()}/v1/health/ready")
             if response.ok:
                 context.logger.info(f"NIM application {nim_application._name} is up and running.")
                 break
