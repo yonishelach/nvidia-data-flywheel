@@ -32,10 +32,7 @@ def spin_up_nim(
         tag=nim_config.get("tag", "latest"),
         project_name=project_name,
     )
-    if not nim_application.is_deployed():
-        nim_application.deploy()
-    else:
-        context.logger.info(f"NIM {model_name} is already deployed.")
+    nim_application.deploy(force_redeploy=True)
     initialize_db_manager()
     # Add NIM configuration to the previous result
     previous_result["nim"] = nim_config
