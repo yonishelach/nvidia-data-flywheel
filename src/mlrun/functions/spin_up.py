@@ -56,7 +56,7 @@ def spin_up_nim(
     previous_result["evaluation_targets"] = [f"{settings.nmp_config.nmp_namespace}/{formatted_model_name}"]
     previous_result["mlrun_function"] = f"nim-{formatted_model_name}"
     response = requests.post(f"{settings.nmp_config.nemo_base_url}/v1/evaluation/targets", json=payload)
-    if response.status_code != 200:
+    if not response.ok:
         context.logger.error(f"Failed to add deployment config: {response.text}")
         raise Exception(f"Failed to add deployment config: {response.text}")
     context.logger.info(f"Deployment config added successfully: {response.json()}")
