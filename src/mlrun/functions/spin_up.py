@@ -1,7 +1,7 @@
 import json
 import mlrun
 import requests
-
+from time import sleep
 from src.tasks.tasks import initialize_db_manager
 from src.mlrun.functions.nim_application import NIMApplication
 from src.config import settings
@@ -68,5 +68,5 @@ def spin_up_nim(
         except requests.exceptions.RequestException as e:
             context.logger.warning(f"Waiting for NIM application {nim_application._name} to be ready: {e}")
         timeout -= 5
-        mlrun.utils.helpers.sleep(5)
+        sleep(5)
     return previous_result
