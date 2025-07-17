@@ -43,7 +43,7 @@ def spin_up_nim(
         "namespace": settings.nmp_config.nmp_namespace,
         "model": {
             "api_endpoint": {
-                "url": f"http://{nim_application.get_url()}/chat/completions",
+                "url": f"http://{nim_application.get_url()}/v1/chat/completions",
                 "model_id": model_name,
                 "format": "openai"
             }
